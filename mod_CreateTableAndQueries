@@ -1,0 +1,54 @@
+Option Compare Database
+Option Explicit
+
+Sub CreateAndLoadSuperMarketSales()
+    Dim db As DAO.Database
+    Dim qdf As DAO.QueryDef
+    Dim i As Integer
+    Dim strSQL As String
+    
+    Set db = CurrentDb
+    
+    ' Drop table if it exists
+    On Error Resume Next
+    db.Execute "DROP TABLE SuperMarketSales"
+    On Error GoTo 0
+    
+    ' Create table with explicit field types
+    db.Execute "CREATE TABLE SuperMarketSales (" & _
+               "Branch TEXT(50)," & _
+               "City TEXT(50)," & _
+               "Quantity INTEGER," & _
+               "Sales CURRENCY)"
+    
+    ' Example: Add 100 rows with dummy values
+    For i = 1 To 100
+        strSQL = "INSERT INTO SuperMarketSales (Branch, City, Quantity, Sales) " & _
+                 "VALUES ('Branch" & i & "', 'City" & i + 8 & "', " & (i Mod 10 + 1) & ", " & (i * 100 + 50) & ");"
+        db.Execute strSQL
+    Next i
+    
+    '--- Query1 ---
+    ' Define SQL for the query
+    strSQL = "SELECT Branch, Quantity, Sum(Sales) As [Total Sales] " & _
+             "From SuperMarketSales " & _
+             "Group BY Branch, Quantity " & _
+             "HAVING (Branch LIKE 'Branch7*') AND (Quantity > 5)"
+
+    ' Delete query if it already exists
+    On Error Resume Next
+    db.QueryDefs.Delete "qBranchSales"
+    On Error GoTo 0
+    ' Create query
+    Set qdf = db.CreateQueryDef("qBranchSales", strSQL)
+        
+    '--- Query2 ---
+    strSQL = "SELECT City, Quantity, Sum(Sales) As [Total Sales] " & _
+             "From SuperMarketSales " & _
+             "Group BY City, Quantity " & _
+             "HAVING (City LIKE 'City6*') AND (Quantity BETWEEN 7 AND 9)"
+    On Error Resume Next
+    db.QueryDefs.Delete "qCitySales"
+    On Error GoTo 0
+    Set qdf = db.CreateQueryDef("qCitySales", strSQL)
+End Sub
